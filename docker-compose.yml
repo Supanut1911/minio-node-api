@@ -1,0 +1,100 @@
+version: "3"
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2021-10-13T00-23-17Z
+  command: server --console-address ":9001" /data
+  expose:
+    - "9000"
+    - "9001"
+  environment:
+    MINIO_ROOT_USER: minio
+    MINIO_ROOT_PASSWORD: minio123
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    interval: 30s
+    timeout: 20s
+    retries: 3
+services:
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - ./storage/minio:/data
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: nginx
+    # volumes:
+    #   - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    # restart: always
+    networks:
+      - default
+    depends_on:
+      - minio1
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #     args:
+  #       - IMAGE_TAG=${IMAGE_TAG}
+  #   image: registry.opensource-technology.com/web-report/node-storage-api-minio:${IMAGE_TAG}
+  #   container_name: node-storage-api-minio
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   environment:
+  #     - STORAGE_BUCKET_NAME=$STORAGE_BUCKET_NAME
+  #     - MINIO_ENDPOINT=$MINIO_ENDPOINT
+  #     - MINIO_PORT=$MINIO_PORT
+  #     - MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY
+  #     - MINIO_SECRET_KEY=$MINIO_SECRET_KEY
+  #     - MAX_OF_RESIZE_IMG=$MAX_OF_RESIZE_IMG
+  #   ports:
+  #     - "8080:8080"
+  # minio:
+  #   image: quay.io/minio/minio:RELEASE.2021-10-13T00-23-17Z.fips
+  #   ports:
+  #     - "9000:9001"
+  #   volumes:
+  #     - ./storage/minio:/data
+  #   container_name: minio
+  #   environment:
+  #     MINIO_ACCESS_KEY: Q3AM3UQ867SPQQA43P2F
+  #     MINIO_SECRET_KEY: zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+  #     MINIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
+  #     MINIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  #   command: server /data --console-address ":9001"
+networks:
+  default:
+    external:
+      name: minio-node-api
+# version: "3"
+# services:
+#   app:
+#     image: node:10.24.0
+#     volumes:
+#       - .:/usr/src/app/
+#     working_dir: /usr/src/app/
+#     environment:
+#       NODE_ENV: production
+#       STORAGE_BUCKET_NAME: web-report
+#       NODE_STORAGE_MINIO_API_PORT: 8080
+#       MINIO_ENDPOINT: localhost
+#       MINIO_PORT: 9000
+#       MINIO_ACCESS_KEY: minioadmin
+#       MINIO_SECRET_KEY: minioadmin
+#     ports:
+#       - 8080:8080
+#     command: npm run start
+#   install:
+#     extends:
+#       service: app
+#     command: npm i
+#   build:
+#     env_file: .env
+#     container_name: node-storage-api-minio
+#     extends:
+#       service: app
+#     command: npm run build

@@ -1,0 +1,9 @@
+{
+  "apps":[
+    {
+      "cmsi":{
+        "bucket":"cmsi"
+      }
+    }
+  ]
+}
